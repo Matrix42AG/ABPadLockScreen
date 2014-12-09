@@ -27,6 +27,8 @@
 
 #define lockScreenView ((ABPadLockScreenView *) [self view])
 
+@import LocalAuthentication;
+
 @interface ABPadLockScreenViewController ()
 
 @property (nonatomic, strong) NSString *lockedOutString;
@@ -58,6 +60,26 @@
         _singleAttemptLeftString = NSLocalizedString(@"attempt left", @"");
     }
     return self;
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    
+    LAContext *context = [[LAContext alloc] init];
+    
+    NSError *error = nil;
+    if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics error:&error]) {
+        [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                localizedReason:self.title
+                          reply:^(BOOL success, NSError *error) {
+                              if (success) {
+                                  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.4 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+                                      [self unlockScreen];
+                                  });
+                              }
+                          }];
+    }
 }
 
 #pragma mark -
